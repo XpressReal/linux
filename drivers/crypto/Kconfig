@@ -13,6 +13,23 @@ if CRYPTO_HW
 
 source "drivers/crypto/allwinner/Kconfig"
 
+config CRYPTO_DEV_RTK
+	tristate "Realtek's Cryptographic Engine driver"
+	select CRYPTO_AES
+	select CRYPTO_DES
+	select CRYPTO_ECB
+	select CRYPTO_CBC
+	select CRYPTO_CTR
+	select CRYPTO_SHA1
+	select CRYPTO_SHA256
+	select CRYPTO_SHA512
+	select CRYPTO_HASH
+	select CRYPTO_BLKCIPHER
+
+	help
+	  This driver interfaces with the hardware crypto accelerator.
+	  Supporting cbc/ecb/ctr, and aes/des/sha cipher mode.
+
 config CRYPTO_DEV_PADLOCK
 	tristate "Support for VIA PadLock ACE"
 	depends on X86 && !UML
