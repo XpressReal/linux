@@ -303,6 +303,16 @@ config BRCM_USB_PINMAP
 	  signals, which are typically on dedicated pins on the chip,
 	  to any gpio.
 
+config USB_FTDI_SPI
+       tristate "Realtek Energy Probe Kit Support"
+       depends on USB
+       default m
+       help
+         Support Realtek energy probe kit, need usb and board.
+	 Can get Voltage and current data and infomation summary
+	 by /dev/ftdi_spi_device_*.
+	 Future are support SPI mode function.
+
 config USB_ONBOARD_HUB
 	tristate "Onboard USB hub support"
 	depends on OF
