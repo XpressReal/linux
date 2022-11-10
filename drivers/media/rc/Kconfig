@@ -448,6 +448,8 @@ config RC_ATI_REMOTE
 	   To compile this driver as a module, choose M here: the module will be
 	   called ati_remote.
 
+source "drivers/media/rc/rtk-ir/Kconfig"
+
 config RC_LOOPBACK
 	tristate "Remote Control Loopback Driver"
 	help
