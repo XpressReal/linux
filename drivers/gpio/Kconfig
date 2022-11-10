@@ -538,6 +538,14 @@ config GPIO_REALTEK_OTTO
 
 	  When built as a module, the module will be called realtek_otto_gpio.
 
+config GPIO_RTD
+	tristate "Realtek DHC GPIO support"
+	depends on ARCH_REALTEK
+	default y
+	select GPIOLIB_IRQCHIP
+	help
+	  Realtek RTD GPIO support.
+
 config GPIO_REG
 	bool
 	help
