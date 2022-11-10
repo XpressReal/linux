@@ -52,6 +52,16 @@ config CEC_GPIO
 	  The CEC bus is present in the HDMI connector and enables communication
 	  between compatible devices.
 
+config CEC_RTK
+	tristate "Realtek HDMI CEC driver"
+	select CEC_CORE
+	select CEC_NOTIFIER
+	help
+	  This is a driver for Realtek HDMI CEC interface. It uses the
+	  generic CEC framework interface.
+	  CEC bus is present in the HDMI connector and enables communication
+	  between compatible devices.
+
 config CEC_SAMSUNG_S5P
 	tristate "Samsung S5P CEC driver"
 	depends on ARCH_EXYNOS || COMPILE_TEST
