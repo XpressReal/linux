@@ -926,6 +926,11 @@ config MMC_WMT
 	  To compile this driver as a module, choose M here: the
 	  module will be called wmt-sdmmc.
 
+config MMC_RTK_SDMMC
+	tristate "Realtek SD/MMC host controller support"
+	help
+	  Realtek SD/MMC host controller support.
+
 config MMC_USDHI6ROL0
 	tristate "Renesas USDHI6ROL0 SD/SDIO Host Controller support"
 	depends on HAS_DMA
