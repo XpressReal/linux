@@ -304,4 +304,11 @@ config POWER_MLXBF
 	help
 	  This driver supports reset or low power mode handling for Mellanox BlueField.
 
+config POWER_RESET_RTK
+	tristate "Realtek reset driver"
+	depends on ARCH_REALTEK
+	default y
+	help
+	  Reboot support for Realtek SoCs.
+
 endif
