@@ -311,4 +311,10 @@ config POWER_RESET_RTK
 	help
 	  Reboot support for Realtek SoCs.
 
+config RTK_REBOOT_MODE
+	tristate "Realtek reboot mode driver"
+	depends on ARCH_REALTEK
+	help
+	  Realtek reboot mode driver.
+
 endif
