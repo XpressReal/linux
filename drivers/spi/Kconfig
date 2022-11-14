@@ -343,6 +343,15 @@ config SPI_DW_BT1_DIRMAP
 
 endif
 
+config SPI_DW_RTK
+	tristate "Realtek SPI controller based on DW SPI core"
+	select SPI_DESIGNWARE
+	depends on ARCH_REALTEK
+	default n
+	help
+	  Driver for the SPI controller core from DesignWare on
+	  Realtek RTD139x, RTD16xx, RTD13xx, or RTD16xxb platform.
+
 config SPI_DLN2
        tristate "Diolan DLN-2 USB SPI adapter"
        depends on MFD_DLN2
