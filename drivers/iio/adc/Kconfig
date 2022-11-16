@@ -849,6 +849,14 @@ config MESON_SARADC
 	  To compile this driver as a module, choose M here: the
 	  module will be called meson_saradc.
 
+config RTK_LSADC0
+	tristate "Realtek LSADC driver"
+	depends on ARCH_REALTEK
+	default n
+	help
+	  Say Y, if you want to enable LSADC feature on Realtek RTD129x,
+	  RTD139x, RTD16xx, RTD13xx, or RTD16xxb platform.
+
 config MP2629_ADC
 	tristate "Monolithic MP2629 ADC driver"
 	depends on MFD_MP2629
