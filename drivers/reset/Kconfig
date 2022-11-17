@@ -193,6 +193,14 @@ config RESET_RASPBERRYPI
 	  interfacing with RPi4's co-processor and model these firmware
 	  initialization routines as reset lines.
 
+config RESET_RTK_M2TMX
+	tristate "Realtek M2TMX Reset Driver"
+	depends on OF && MFD_SYSCON
+	default n
+	select RTK_PM_TRACE
+	help
+	  This enable Realtek M2TMX Reset Driver
+ 
 config RESET_RZG2L_USBPHY_CTRL
 	tristate "Renesas RZ/G2L USBPHY control driver"
 	depends on ARCH_RZG2L || COMPILE_TEST
