@@ -292,6 +292,24 @@ config PCIE_ROCKCHIP_EP
 	  endpoint mode on Rockchip SoC. There is 1 internal PCIe port
 	  available to support GEN2 with 4 slots.
 
+config PCIE_RTD
+	tristate "Realtek PCIe host controller"
+	select PHY_RTD_PCIE
+	help
+	  Realtek PCIe host controller support.
+
+config RTD16XXB_PCIE1_ACP
+	bool "Realtek PCIe host controller ACP support"
+	depends on PCIE_RTD
+	help
+	  Enable Realtek RTD16XXB PCIE1 ACP.
+
+config PCIE_RTD_TRANS
+	bool "Realtek PCIe tanslation"
+	depends on PCIE_RTD
+	help
+	  Realtek PCIe MMIO translation support.
+ 
 config PCI_V3_SEMI
 	bool "V3 Semiconductor PCI controller"
 	depends on OF
