@@ -295,4 +295,11 @@ config QCOM_IPCC
 	  acts as an interrupt controller for receiving interrupts from clients.
 	  Say Y here if you want to build this driver.
 
+config RTK_IFCP_MBOX
+	tristate "Realtek IFCP Mailbox Support"
+	depends on ARCH_REALTEK && RTK_IFCP
+	help
+	  Mailbox implementation for Realtek platform. This mailbox is used
+	  for communication to IFCP. If unsure say N.
+
 endif
