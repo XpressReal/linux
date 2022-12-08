@@ -81,4 +81,9 @@ config RPMSG_VIRTIO
 	select RPMSG_NS
 	select VIRTIO
 
+config RPMSG_RTK_RPC
+	tristate "RTK RPC DRIVER"
+	depends on RTK_FW_REMOTEPROC
+	select RPMSG
+
 endmenu
