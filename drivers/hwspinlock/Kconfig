@@ -63,4 +63,12 @@ config HSEM_U8500
 
 	  If unsure, say N.
 
+config HWSPINLOCK_RTK
+	tristate "Realtek Hardware Spinlock device"
+	depends on ARCH_REALTEK || COMPILE_TEST
+	help
+	  Say y here to support the Realtek Hardware Spinlock.
+
+	  If unsure, say N.
+
 endif # HWSPINLOCK
