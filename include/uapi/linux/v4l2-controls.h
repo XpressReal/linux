@@ -169,6 +169,9 @@ enum v4l2_colorfx {
  */
 #define V4L2_CID_USER_ATMEL_ISC_BASE		(V4L2_CID_USER_BASE + 0x10c0)
 
+/* The base for the tc358743 driver controls.*/
+#define V4L2_CID_USER_REALTEK_BASE			(V4L2_CID_USER_BASE + 0x1100)
+
 /*
  * The base for the CODA driver controls.
  * We reserve 16 controls for this driver.
