@@ -1362,6 +1362,9 @@ int drm_mode_atomic_ioctl(struct drm_device *dev,
 		return -EINVAL;
 	}
 
+	if (arg->flags == DRM_MODE_PAGE_FLIP_ASYNC)
+		arg->flags = DRM_MODE_ATOMIC_NONBLOCK;
+
 	if (arg->flags & DRM_MODE_PAGE_FLIP_ASYNC) {
 		drm_dbg_atomic(dev,
 			       "commit failed: invalid flag DRM_MODE_PAGE_FLIP_ASYNC\n");
