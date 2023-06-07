@@ -20,3 +20,4 @@ obj-$(CONFIG_USB)		+= usbcore.o
 
 obj-$(CONFIG_USB_LEDS_TRIGGER_USBPORT)	+= ledtrig-usbport.o
 obj-$(CONFIG_USB_MONITOR_USBPORT)	+= monitor-usbport.o
+obj-$(CONFIG_USB_HOST_TEST_MODE)	+= test-usbport.o
