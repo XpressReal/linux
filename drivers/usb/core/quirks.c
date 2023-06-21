@@ -552,6 +552,23 @@ static const struct usb_device_id usb_quirk_list[] = {
 	/* INTEL VALUE SSD */
 	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
 
+#if 1 /* USB_PATCH_BY_RTK */
+	/* Microsoft Wireless Mouse 5000 */
+	{ USB_DEVICE(0x045e, 0x0745), .driver_info = USB_QUIRK_RESET },
+
+	/* Logitech Wireless Mouse M705 */
+	{ USB_DEVICE(0x046d, 0xc52b), .driver_info = USB_QUIRK_RESET },
+
+	/* Kingston DataTraveler 3.0 G4 */
+	{ USB_DEVICE_VER(0x0951, 0x1666, 0, 0x1100), .driver_info = USB_QUIRK_RESET_RESUME },
+
+	/* Kingston DataTraveler 3.0 G4 no support lpm */
+	{ USB_DEVICE(0x0951, 0x1666), .driver_info = USB_QUIRK_NO_LPM },
+
+	/* Toshiba no support lpm */
+	{ USB_DEVICE(0x0930, 0x6545), .driver_info = USB_QUIRK_NO_LPM },
+#endif /* USB_PATCH_BY_RTK */
+
 	{ }  /* terminating entry must be last */
 };
 
