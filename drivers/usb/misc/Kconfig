@@ -313,6 +313,15 @@ config USB_FTDI_SPI
 	 by /dev/ftdi_spi_device_*.
 	 Future are support SPI mode function.
 
+config USB_TEST_PERFORMANCE
+	tristate "USB performance testing driver"
+	help
+	  This driver is for performance testing host controller software.
+	  It is used with specialized device firmware for performance testing.
+	  This driver developed base on usb testing driver.
+	  See <http://www.linux-usb.org/usbtest/> for more information,
+	  including sample test device firmware and "how to use it".
+
 config USB_ONBOARD_HUB
 	tristate "Onboard USB hub support"
 	depends on OF

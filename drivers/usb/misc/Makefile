@@ -33,4 +33,5 @@ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
 obj-$(CONFIG_USB_LINK_LAYER_TEST)	+= lvstest.o
 obj-$(CONFIG_BRCM_USB_PINMAP)		+= brcmstb-usb-pinmap.o
 obj-$(CONFIG_USB_FTDI_SPI)		+= ftdi-spi.o
+obj-$(CONFIG_USB_TEST_PERFORMANCE)	+= usbperf.o
 obj-$(CONFIG_USB_ONBOARD_HUB)		+= onboard_usb_hub.o
