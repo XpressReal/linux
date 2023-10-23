@@ -123,6 +123,38 @@ config R8169SOC
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called r8169soc.  This is recommended.
+
+config R8168
+	tristate "Realtek 8168 gigabit ethernet support"
+	depends on PCI
+	select FW_LOADER
+	select CRC32
+	select MII
+	help
+	  Say Y here if you have a Realtek 8168 PCI Gigabit Ethernet adapter.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called r8168.  This is recommended.
+
+config R8125
+	tristate "Realtek 8125 gigabit ethernet support"
+	depends on PCI
+	select FW_LOADER
+	select CRC32
+	select MII
+	help
+	  Say Y here if you have a Realtek 8125 PCI Gigabit Ethernet adapter.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called r8125.  This is recommended.
+
+config R8125_SG_TSO_ON
+	bool "Realtek 8125 enable scatter-gather and TCP segment offload"
+	depends on R8125
+	default y
+	help
+	  Say Y here to enable R8125 SG and TSO feature by default.
+
 config RTL_RX_NO_COPY
 	bool "Support to receive packets without memory copy"
 	default n
