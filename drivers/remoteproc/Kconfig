@@ -365,6 +365,11 @@ config XLNX_R5_REMOTEPROC
 
 	  It's safe to say N if not interested in using RPU r5f cores.
 
+config RTK_FW_REMOTEPROC
+	tristate "RTK REMOTEPROC DRIVER"
+	help
+	 enable RTK's rproc dirver.
+
 endif # REMOTEPROC
 
 endmenu
