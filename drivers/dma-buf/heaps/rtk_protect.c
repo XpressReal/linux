@@ -11,6 +11,7 @@
 
 static struct tee_mem_device *memdev;
 
+#ifdef CONFIG_OPTEE_MEM_API
 int rtk_protect_create(struct rtk_protect_create_info *info)
 {
 	struct tee_mem_protected_slot *slot;
@@ -102,3 +103,35 @@ bool rtk_protect_handler_ready(void)
 
 	return memdev != NULL;
 }
+#else
+int rtk_protect_create(struct rtk_protect_create_info *info)
+{
+        return 0;
+}
+
+int rtk_protect_change(struct rtk_protect_change_info *info)
+{
+        return 0;
+}
+
+int rtk_protect_destroy(struct rtk_protect_destroy_info *info)
+{
+        return 0;
+}
+
+int rtk_protect_ext_set(struct rtk_protect_ext_set *info)
+{
+        return 0;
+}
+
+int rtk_protect_ext_unset(struct rtk_protect_ext_unset *info)
+{
+        return 0;
+}
+
+bool rtk_protect_handler_ready(void)
+{
+	pr_warn("%s: use Realtek media heap without Soc memory protection\n", __func__);
+        return 1;
+}
+#endif /* CONFIG_OPTEE_MEM_API */
