@@ -611,15 +611,16 @@
 				assigned-clock-rates = <702000000>;
 
 				gpu: gpu@0 {
-					compatible = "arm,mali-midgard";
+					compatible = "arm,mali-valhall-jm";
 					reg = <0x0 0x4000>;
 					interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>,
 						     <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>,
 						     <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
-					interrupt-names = "JOB", "MMU", "GPU";
+					interrupt-names = "job", "mmu", "gpu";
 					status = "disabled";
 					clocks = <&cc RTD1619B_CRT_CLK_EN_GPU>;
 					clock-name = "clk_mali";
+					mali-supply = <&gpu_supp>;
 
 					power_model {
 						compatible = "arm,mali-simple-power-model";
@@ -974,6 +975,13 @@
 
 	ac: rtd1xxx-ac.0 {
 		compatible = "realtek,rtd1xxx-ac";
+	};
+
+	gpu_supp: gpu-supply {
+		compatible = "regulator-fixed";
+		regulator-name = "gpu-supply";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <800000>;
 	};
 };
 
