@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config RTK_V4L2_VDEC
+bool "Realtek V4L2 Video Decoder Interface"
+	depends on VIDEO_DEV
+	select V4L_MEM2MEM_DRIVERS
+	select V4L2_MEM2MEM_DEV
+	select VIDEOBUF2_DMA_CONTIG
+	select VIDEOBUF2_VMALLOC
+	default n
+	help
+	  Realtek V4L2 Video Decoder Driver Interface
+
+config RTK_V4L2_VENC
+bool "Realtek V4L2 Video Encoder Interface"
+	depends on VIDEO_DEV
+	select V4L_MEM2MEM_DRIVERS
+	select V4L2_MEM2MEM_DEV
+	select VIDEOBUF2_DMA_CONTIG
+	select VIDEOBUF2_VMALLOC
+	default n
+	help
+	  Realtek V4L2 Video Encoder Driver Interface
