@@ -20,7 +20,7 @@
 #include "sar.h"
 #include "sdio.h"
 
-bool rtw_disable_lps_deep_mode;
+bool rtw_disable_lps_deep_mode = true;
 EXPORT_SYMBOL(rtw_disable_lps_deep_mode);
 bool rtw_bf_support = true;
 unsigned int rtw_debug_mask;
