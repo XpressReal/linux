@@ -216,10 +216,10 @@ static struct rpi_touchscreen *panel_to_ts(struct drm_panel *panel)
 	return container_of(panel, struct rpi_touchscreen, base);
 }
 
-static int rpi_touchscreen_i2c_read(struct rpi_touchscreen *ts, u8 reg)
-{
-	return i2c_smbus_read_byte_data(ts->i2c, reg);
-}
+// static int rpi_touchscreen_i2c_read(struct rpi_touchscreen *ts, u8 reg)
+// {
+// 	return i2c_smbus_read_byte_data(ts->i2c, reg);
+// }
 
 static void rpi_touchscreen_i2c_write(struct rpi_touchscreen *ts,
 				      u8 reg, u8 val)
@@ -267,14 +267,18 @@ static int rpi_touchscreen_noop(struct drm_panel *panel)
 static int rpi_touchscreen_prepare(struct drm_panel *panel)
 {
 	struct rpi_touchscreen *ts = panel_to_ts(panel);
-	int i;
 
 	rpi_touchscreen_i2c_write(ts, REG_POWERON, 1);
 	/* Wait for nPWRDWN to go low to indicate poweron is done. */
-	for (i = 0; i < 100; i++) {
-		if (rpi_touchscreen_i2c_read(ts, REG_PORTB) & 1)
-			break;
-	}
+	// for (i = 0; i < 100; i++) {
+	// 	if (rpi_touchscreen_i2c_read(ts, REG_PORTB) & 1) {
+	// 		printk(KERN_ALERT"[fn_name]:[\x1b[31m%s\033[0m], [line]: \x1b[33m%d\033[0m\n", __func__, __LINE__);
+	// 		break;
+	// 	}
+	// }
+
+	msleep(100);
+	rpi_touchscreen_i2c_write(ts, REG_PWM, 0);
 
 	rpi_touchscreen_write(ts, DSI_LANEENABLE,
 			      DSI_LANEENABLE_CLOCK |
@@ -286,7 +290,15 @@ static int rpi_touchscreen_prepare(struct drm_panel *panel)
 	rpi_touchscreen_write(ts, PPI_LPTXTIMECNT, 0x03);
 
 	rpi_touchscreen_write(ts, SPICMR, 0x00);
+#if 1
+	rpi_touchscreen_write(ts, HSR, 0x2c0002);
+	rpi_touchscreen_write(ts, VSR, 0x150002);
+	rpi_touchscreen_write(ts, HDISPR, 0x3d0320);
+	rpi_touchscreen_write(ts, VDISPR, 0x0701e0);
+	rpi_touchscreen_write(ts, LCDCTRL, 0x00100152);
+#else
 	rpi_touchscreen_write(ts, LCDCTRL, 0x00100150);
+#endif
 	rpi_touchscreen_write(ts, SYSCTRL, 0x040f);
 	msleep(100);
 
@@ -309,7 +321,7 @@ static int rpi_touchscreen_enable(struct drm_panel *panel)
 	 * configuration will be supported using VC4's plane
 	 * orientation bits.
 	 */
-	rpi_touchscreen_i2c_write(ts, REG_PORTA, BIT(2));
+	// rpi_touchscreen_i2c_write(ts, REG_PORTA, BIT(2));
 
 	return 0;
 }
@@ -338,7 +350,6 @@ static int rpi_touchscreen_get_modes(struct drm_panel *panel,
 			mode->type |= DRM_MODE_TYPE_PREFERRED;
 
 		drm_mode_set_name(mode);
-
 		drm_mode_probed_add(connector, mode);
 		num++;
 	}
@@ -366,7 +377,7 @@ static int rpi_touchscreen_probe(struct i2c_client *i2c)
 	struct rpi_touchscreen *ts;
 	struct device_node *endpoint, *dsi_host_node;
 	struct mipi_dsi_host *host;
-	int ver;
+	// int ver;
 	struct mipi_dsi_device_info info = {
 		.type = RPI_DSI_DRIVER_NAME,
 		.channel = 0,
@@ -381,20 +392,22 @@ static int rpi_touchscreen_probe(struct i2c_client *i2c)
 
 	ts->i2c = i2c;
 
-	ver = rpi_touchscreen_i2c_read(ts, REG_ID);
-	if (ver < 0) {
-		dev_err(dev, "Atmel I2C read failed: %d\n", ver);
-		return -ENODEV;
-	}
+	// ver = rpi_touchscreen_i2c_read(ts, REG_ID);
+	// printk(KERN_ALERT"ver = %d\n", ver);
 
-	switch (ver) {
-	case 0xde: /* ver 1 */
-	case 0xc3: /* ver 2 */
-		break;
-	default:
-		dev_err(dev, "Unknown Atmel firmware revision: 0x%02x\n", ver);
-		return -ENODEV;
-	}
+	// if (ver < 0) {
+	// 	dev_err(dev, "Atmel I2C read failed: %d\n", ver);
+	// 	return -ENODEV;
+	// }
+
+	// switch (ver) {
+	// case 0xde: /* ver 1 */
+	// case 0xc3: /* ver 2 */
+	// 	break;
+	// default:
+	// 	dev_err(dev, "Unknown Atmel firmware revision: 0x%02x\n", ver);
+	// 	return -ENODEV;
+	// }
 
 	/* Turn off at boot, so we can cleanly sequence powering on. */
 	rpi_touchscreen_i2c_write(ts, REG_POWERON, 0);
