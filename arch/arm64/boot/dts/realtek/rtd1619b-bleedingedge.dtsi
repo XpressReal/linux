@@ -365,7 +365,7 @@
 
 &hdmi {
 	hdmi5v-gpios = <&gpio 5 GPIO_ACTIVE_HIGH>;
-	ext-flags = <0x0>;
+	ext-flags = <0x1>;
 };
 
 &dsi {
