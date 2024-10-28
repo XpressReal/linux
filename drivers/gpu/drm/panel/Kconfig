@@ -212,6 +212,13 @@ config DRM_PANEL_INNOLUX_EJ030NA
           320x480 3.0" panel as found in the RS97 V2.1, RG300(non-ips)
           and LDK handheld gaming consoles.
 
+config DRM_PANEL_INNOLUX_N080JCE_G41
+	tristate "Innolux N080JCE-G41 1200x1920 LCD panel"
+	depends on DRM_MIPI_DSI
+	help
+	  Say Y if you want to enable support for Innolux N080JCE-G41
+	  1200x1920 LCD panel.
+
 config DRM_PANEL_INNOLUX_P079ZCA
 	tristate "Innolux P079ZCA panel"
 	depends on OF
