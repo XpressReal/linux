@@ -20,5 +20,7 @@ if DRM_RTK
 config RTK_METADATA_AUTOJUDGE
 	bool "Realtek specific METADATA buffer auto judgement"
 	default n
+config DRM_RTK_VOWB
+	bool "Enable VOWB functions"
 
 endif

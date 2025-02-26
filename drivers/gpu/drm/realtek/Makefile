@@ -23,5 +23,7 @@ rtk_drm-y += rtk_hdcp1_tee.o \
              rtk_hdcp2_tee.o
 endif
 
+rtk_drm-$(CONFIG_DRM_RTK_VOWB) += rtk_drm_vowb.o
+
 obj-$(CONFIG_DRM_RTK) += rtk_drm.o
 

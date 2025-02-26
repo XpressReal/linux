@@ -7,6 +7,8 @@
 #define _RTK_DRM_DRV_H
 
 #include "rtk_drm_rpc.h"
+#include "rtk_drm_vowb.h"
+#include "uapi/rtk_drm_vowb.h"
 
 #define RTK_MAX_CRTC		1
 #define RTK_MAX_FB_BUFFER	3
@@ -74,6 +76,14 @@
 #define DRM_IOCTL_RTK_SET_DISPOUT_FORMAT     DRM_IOWR( DRM_COMMAND_BASE + RTK_SET_DISPOUT_FORMAT, struct rpc_display_output_format)
 #define DRM_IOCTL_RTK_GET_DISPOUT_FORMAT     DRM_IOWR( DRM_COMMAND_BASE + RTK_GET_DISPOUT_FORMAT, struct rpc_display_output_format)
 #define DRM_IOCTL_RTK_SET_HDMI_AUDIO_MUTE    DRM_IOWR( DRM_COMMAND_BASE + RTK_SET_HDMI_AUDIO_MUTE, struct rpc_audio_mute_info)
+#define DRM_IOCTL_RTK_VOWB_SETUP       DRM_IOWR(DRM_COMMAND_BASE + 0x40, struct rtk_drm_vowb_setup)
+#define DRM_IOCTL_RTK_VOWB_TEARDOWN    DRM_IOWR(DRM_COMMAND_BASE + 0x41, struct rtk_drm_vowb_teardown)
+#define DRM_IOCTL_RTK_VOWB_ADD_SRC_PIC DRM_IOWR(DRM_COMMAND_BASE + 0x42, struct rtk_drm_vowb_add_src_pic)
+#define DRM_IOCTL_RTK_VOWB_START       DRM_IOWR(DRM_COMMAND_BASE + 0x43, struct rtk_drm_vowb_start)
+#define DRM_IOCTL_RTK_VOWB_STOP        DRM_IOWR(DRM_COMMAND_BASE + 0x44, struct rtk_drm_vowb_stop)
+#define DRM_IOCTL_RTK_VOWB_GET_DST_PIC DRM_IOWR(DRM_COMMAND_BASE + 0x45, struct rtk_drm_vowb_dst_pic)
+#define DRM_IOCTL_RTK_VOWB_RUN_CMD     DRM_IOWR(DRM_COMMAND_BASE + 0x50, struct rtk_drm_vowb_run_cmd)
+#define DRM_IOCTL_RTK_VOWB_CHECK_CMD   DRM_IOWR(DRM_COMMAND_BASE + 0x51, struct rtk_drm_vowb_check_cmd)
 
 struct drm_rtk_buf_st {
 	uint32_t plane_id;
@@ -108,6 +118,7 @@ struct rtk_drm_private {
 	struct mutex obj_lock;
 	struct rtk_rpc_info rpc_info;
 	int obj_info_num;
+	struct rtk_drm_vowb *vowb;
 };
 
 extern unsigned int rtk_drm_recovery;

@@ -318,6 +318,8 @@ irqreturn_t rtk_crtc_isr(int irq, void *dev_id)
 		rtk_crtc_finish_page_flip(crtc);
 	}
 
+	rtk_drm_vowb_isr(rtk_crtc->crtc.dev);
+
 	return IRQ_HANDLED;
 }
 
@@ -458,6 +460,16 @@ static int rtk_crtc_bind(struct device *dev, struct device *master, void *data)
 					"expectedPresentTime", 0, 0xffffffffffffffff);
 	drm_object_attach_property(&rtk_crtc->crtc.base, rtk_crtc->present_time_prop, 0);
 
+	if (of_device_is_compatible(dev->of_node, "realtek,rtd-crtc-main")) {
+		struct rtk_drm_vowb *vowb;
+
+		vowb = rtk_drm_vowb_create(drm, rtk_crtc->rpc_info);
+		if (IS_ERR(vowb)) {
+			dev_err(dev, "failed to setup vowb: %pe\n", vowb);
+			return PTR_ERR(vowb);
+		}
+		priv->vowb = vowb;
+	}
 	return 0;
 }
 
@@ -467,6 +479,9 @@ rtk_crtc_unbind(struct device *dev, struct device *master, void *data)
 	struct rtk_drm_crtc *rtk_crtc = dev_get_drvdata(dev);
 	struct drm_device *drm = rtk_crtc->crtc.dev;
 	struct drm_plane *plane, *tmp;
+	struct rtk_drm_private *priv = drm->dev_private;
+
+	rtk_drm_vowb_destroy(priv->vowb);
 
 	list_for_each_entry_safe(plane, tmp, &drm->mode_config.plane_list, head)
 		rtk_plane_destroy(plane);

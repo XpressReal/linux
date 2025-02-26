@@ -1761,6 +1761,96 @@ struct video_object {
 	unsigned int dolby_out_hdr_metadata_addr;   /* 'rtk15' 0x72746B3F */
 	unsigned int dolby_out_hdr_metadata_size;
 };
+
+struct video_transcode_picture_object {
+	struct inband_cmd_pkg_header header;
+	unsigned int version; //from 'TRA1'=0x54524131
+
+	/* ID info */
+	unsigned int agentID_H;
+	unsigned int agentID_L;
+	unsigned int bufferID_H;
+	unsigned int bufferID_L;
+
+	/* source pic info */
+	unsigned int mode;
+	unsigned int Y_addr;
+	unsigned int U_addr;
+	unsigned int width;
+	unsigned int height;
+	unsigned int Y_pitch;
+	unsigned int C_pitch;
+
+	unsigned int lumaOffTblAddr;
+	unsigned int chromaOffTblAddr;
+	unsigned int bufBitDepth;
+	unsigned int bufFormat;
+
+	unsigned int Y_addr_prev;
+	unsigned int U_addr_prev;
+	unsigned int Y_addr_next;
+	unsigned int U_addr_next;
+
+	/* target pic info */
+	unsigned int wb_y_addr;
+	unsigned int wb_c_addr;
+	unsigned int wb_w;
+	unsigned int wb_h;
+	unsigned int wb_pitch;
+	unsigned int targetFormat;
+	//see enum wb_targetFormat...
+	//bit 0=>NV21, 1:NV21, 0:NV12;
+	//bit 1=>422, 1:422, 0:420
+	//bit 2=>bit depth, 1:10 bits, 0: 8 bits;
+	//bit 3=>mode_10b, 0: use 2 bytes to store 1 components. MSB justified. 1: use 4 bytes to store 3 components, LSB justified.
+	//bit 4=>wb_use_v1: config vo use which plane to do transcode, 1:V1, 0:V2
+	//bit 5=>wb_mix1: transcode content after mixer 1(OSD+V1+...), 1:mixer 1, 0: V1/V2 only
+
+	/* from 'TRA2'=0x54524132
+	modify V2 color for every pic:
+	valid in [0, 64] with 0 being the weakest and 64 being the strongest. Default value is 32. */
+	unsigned int    contrast;
+	unsigned int    brightness;
+	unsigned int    hue;
+	unsigned int    saturation;
+
+	/*from 'TRA3'=0x54524133 for sharpness setting*/
+	unsigned int    sharp_en;
+	unsigned int    sharp_value;
+
+	/*from 'TRA4'=0x54524134 for crop, default x=y=w=h =0*/
+	unsigned int    crop_x;
+	unsigned int    crop_y;
+	unsigned int    crop_width;
+	unsigned int    crop_height;
+};
+
+struct video_writeback_picture_object {
+	struct inband_cmd_pkg_header header;
+	unsigned int version;//from 'WBK1'=0x57424B31
+
+	/* ID info */
+	unsigned int agentID_H;
+	unsigned int agentID_L;
+	unsigned int bufferID_H;
+	unsigned int bufferID_L;
+
+	/* return status */
+	unsigned int success;
+
+	/* wb pic info */
+	unsigned int mode;
+	unsigned int Y_addr;
+	unsigned int U_addr;
+	unsigned int width;
+	unsigned int height;
+	unsigned int Y_pitch;
+	unsigned int C_pitch;
+	unsigned int bufBitDepth;
+	unsigned int bufFormat;
+};
+
+
 #ifdef CONFIG_KERN_RPC_HANDLE_COMMAND
 typedef struct RPC_STRUCT {
 	uint32_t programID;

@@ -144,6 +144,13 @@ static void rtk_drm_unbind(struct device *dev)
 	drm_dev_put(drm);
 }
 
+static int rtk_drm_release(struct inode *inode, struct file *filp)
+{
+	rtk_drm_vowb_release(inode, filp);
+	return drm_release(inode, filp);
+}
+
+
 static const struct file_operations rtk_drm_driver_fops = {
 	.owner = THIS_MODULE,
 	.open = drm_open,
@@ -154,7 +161,7 @@ static const struct file_operations rtk_drm_driver_fops = {
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = drm_compat_ioctl,
 #endif
-	.release = drm_release,
+	.release = rtk_drm_release,
 };
 
 static struct drm_ioctl_desc rtk_drm_ioctls[] = {
@@ -186,6 +193,14 @@ static struct drm_ioctl_desc rtk_drm_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(RTK_SET_DISPOUT_FORMAT, rtk_plane_set_dispout_format, DRM_AUTH|DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(RTK_GET_DISPOUT_FORMAT, rtk_plane_get_dispout_format, DRM_AUTH|DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(RTK_SET_HDMI_AUDIO_MUTE, rtk_plane_set_hdmi_audio_mute, DRM_AUTH|DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_SETUP, rtk_drm_vowb_setup_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_TEARDOWN, rtk_drm_vowb_teardown_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_START, rtk_drm_vowb_start_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_STOP, rtk_drm_vowb_stop_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_ADD_SRC_PIC, rtk_drm_vowb_add_src_pic_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_GET_DST_PIC, rtk_drm_vowb_get_dst_pic_ioctl, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_RUN_CMD, rtk_drm_vowb_run_cmd, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(RTK_VOWB_CHECK_CMD, rtk_drm_vowb_check_cmd, DRM_RENDER_ALLOW),
 };
 
 static struct drm_driver rtk_drm_driver = {
