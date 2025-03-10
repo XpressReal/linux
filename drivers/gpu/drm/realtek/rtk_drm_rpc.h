@@ -1823,6 +1823,22 @@ struct video_transcode_picture_object {
 	unsigned int    crop_y;
 	unsigned int    crop_width;
 	unsigned int    crop_height;
+
+	/*from 'TRA5'=0x54524135 for Hank tvve compress mode or cnm tile mode*/
+	unsigned int tvve_picture_width;//rtk 13 TVVE   for vo calculate header pitch
+	unsigned int tvve_lossy_en;
+	unsigned int tvve_bypass_en;
+	unsigned int tvve_qlevel_sel_y;
+	unsigned int tvve_qlevel_sel_c;
+
+	unsigned int is_ve_tile_mode;  //cnm tile mode
+
+	/*from 'TRA5'=0x54524136 for subtitle*/
+	unsigned int sub_address; //  <= subtitle buffer  address
+	unsigned int sub_w;         //  <= subtitle width
+	unsigned int sub_h;          //  <= subtitle height
+	unsigned int sub_pitch;     //  <= subtitle pitch
+	unsigned int sub_format; //   <= subtitle format
 };
 
 struct video_writeback_picture_object {

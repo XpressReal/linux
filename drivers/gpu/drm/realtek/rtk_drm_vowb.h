@@ -130,4 +130,16 @@ int rtk_drm_vowb_check_cmd(struct drm_device *dev, void *data, struct drm_file *
 
 #endif /* CONFIG_DRM_RTK_VOWB */
 
+static inline u32 get_rheap_flags(struct rtk_rpc_info *rpc_info)
+{
+	// FIXME
+	return  RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC | RTK_FLAG_ACPUACC;
+}
+
+static inline struct rpmsg_device *get_rpdev(struct rtk_rpc_info *rpc_info)
+{
+	// FIXME
+	return rpc_info->acpu_ept_info->rpdev;
+}
+
 #endif

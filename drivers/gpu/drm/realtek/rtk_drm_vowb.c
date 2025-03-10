@@ -22,18 +22,25 @@ struct rtk_drm_vowb_func1_data {
 	struct drm_file *file_priv;
 
 	struct rtk_drm_vowb_src_pic srcs[RTK_DRM_VOWB_MAX_SRC_PIC];
-	u32 num_srcs;
+	u32 w;
+	u32 h;
+	u32 y_offset;
+	u32 c_offset;
+	u32 format;
 
 	struct rtk_drm_vowb_dst_pic dst;
 	u32 handles[4];
 	u32 num_handles;
+	u32 num_srcs;
 	u32 dst_id;
 
 	u32 flags;
-	u32 enabled;
 
 	u64 cnt_display;
 	u32 cnt_vowb;
+	u32 enabled : 1;
+	u32 should_stop : 1;
+	u32 should_teardown : 1;
 };
 
 struct rtk_drm_vowb_func2_data {
@@ -68,18 +75,6 @@ struct rtk_drm_vowb {
 
 static void rtk_drm_vowb_check_resp(struct work_struct *work);
 
-static u32 get_rheap_flags(struct rtk_rpc_info *rpc_info)
-{
-	// FIXME
-	return  RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC | RTK_FLAG_ACPUACC;
-}
-
-static struct rpmsg_device *get_rpdev(struct rtk_rpc_info *rpc_info)
-{
-	// FIXME
-	return rpc_info->acpu_ept_info->rpdev;
-}
-
 static int rtk_drm_vowb_setup_agent(struct rtk_drm_vowb *vowb)
 {
 	struct rtk_rpc_info *rpc_info = vowb->rpc_info;
@@ -91,7 +86,7 @@ static int rtk_drm_vowb_setup_agent(struct rtk_drm_vowb *vowb)
 	return 0;
 }
 
-/*static int rtk_drm_vowb_display(struct rtk_drm_vowb *vowb, bool zero_buffer)
+static int rtk_drm_vowb_display(struct rtk_drm_vowb *vowb, bool zero_buffer)
 {
 	struct rtk_rpc_info *rpc_info = vowb->rpc_info;
 	struct rpc_vo_filter_display info = {};
@@ -105,7 +100,7 @@ static int rtk_drm_vowb_setup_agent(struct rtk_drm_vowb *vowb)
 		return -EINVAL;
 	}
 	return 0;
-}*/
+}
 
 static int rtk_drm_ringbuffer_alloc(struct drm_device *drm,
 				    struct rtk_rpc_info *rpc_info,
@@ -356,6 +351,17 @@ static int rtk_drm_vowb_run(struct rtk_drm_vowb *vowb)
 	return 0;
 }
 
+static int rtk_drm_vowb_stop(struct rtk_drm_vowb *vowb)
+{
+	struct rtk_rpc_info *rpc_info = vowb->rpc_info;
+
+	if (rpc_video_stop(rpc_info, vowb->instance)) {
+		DRM_ERROR("failed in rpc_video_stop()\n");
+		return -EINVAL;
+	}
+	return 0;
+}
+
 static void rtk_drm_destroy_agent(struct rtk_drm_vowb *vowb)
 {
 	struct rtk_rpc_info *rpc_info = vowb->rpc_info;
@@ -392,12 +398,6 @@ struct rtk_drm_vowb *rtk_drm_vowb_create(struct drm_device *drm, struct rtk_rpc_
 	ret = rtk_drm_vowb_setup_agent(vowb);
 	if (ret)
 		goto free_refclock;
-	/*ret = rtk_drm_vowb_display(vowb, 0);
-	if (ret)
-		goto destroy_agent;*/
-	ret = rtk_drm_config_display_window(vowb, NULL, NULL);
-	if (ret)
-		goto destroy_agent;
 	ret = rtk_drm_vowb_setup_refclock(vowb);
 	if (ret)
 		goto destroy_agent;
@@ -407,12 +407,6 @@ struct rtk_drm_vowb *rtk_drm_vowb_create(struct drm_device *drm, struct rtk_rpc_
 	ret = rtk_drm_vowb_setup_ringbuffer(vowb, &vowb->rx, 0x20140507);
 	if (ret)
 		goto destroy_agent;
-	ret = rtk_drm_vowb_run(vowb);
-	if (ret)
-		goto destroy_agent;
-	/*ret = rtk_drm_vowb_display(vowb, 1);
-	if (ret)
-		goto destroy_agent;*/
 
 	return vowb;
 
@@ -446,7 +440,7 @@ static int rtk_drm_vowb_handle_to_addr(struct drm_file *file_priv, u32 handle, d
 
 	obj = drm_gem_object_lookup(file_priv, handle);
 	if (!obj) {
-		DRM_ERROR("Failed to lookup GEM object of handle %d\n", handle);
+		DRM_ERROR("Failed to lookup GEM object of handle %u\n", handle);
 		return -ENXIO;
 	}
 
@@ -454,6 +448,17 @@ static int rtk_drm_vowb_handle_to_addr(struct drm_file *file_priv, u32 handle, d
 	*addr = robj->paddr;
 	drm_gem_object_put(obj);
 
+	return 0;
+}
+
+static int rtk_drm_vowb_handle_to_addr_offset(struct drm_file *file_priv, u32 handle, u32 offset,
+					      dma_addr_t *addr)
+{
+	int ret;
+
+	ret = rtk_drm_vowb_handle_to_addr(file_priv, handle, addr);
+	if (!ret)
+		*addr += offset;
 	return 0;
 }
 
@@ -530,10 +535,10 @@ static void rtk_drm_vowb_check_resp(struct work_struct *work)
 		if (job->job_id <= job_id) {
 			if (job->job_done_cb)
 				job->job_done_cb(vowb, job);
-			wake_up_all(&vowb->wq);
 			job->status = RTK_DRM_VOWB_JOB_STATUS_DONE;
 			trace_vowb_job_update_status(job);
 			vowb->cur_job = NULL;
+			wake_up_all(&vowb->wq);
 			return;
 		}
 	} while (1);
@@ -549,7 +554,7 @@ static int rtk_drm_vowb_queue_job(struct rtk_drm_vowb *vowb, struct rtk_drm_vowb
 	int ret;
 
 	if (vowb->cur_job) {
-		DRM_INFO("queue job %p failed (job %p not completed)\n", job, vowb->cur_job);
+		DRM_DEBUG("queue job %p failed (job %p not completed)\n", job, vowb->cur_job);
 		return -EBUSY;
 	}
 
@@ -571,7 +576,7 @@ static int rtk_drm_vowb_queue_job(struct rtk_drm_vowb *vowb, struct rtk_drm_vowb
 }
 
 static void inband_cmd_video_object(struct rpmsg_device *rpdev, struct video_object *cmd,
-				    struct rtk_drm_vowb_dst_pic *dst, dma_addr_t dst_addr)
+				    struct rtk_drm_vowb_func1_data *func1, dma_addr_t dst_addr)
 {
 	cmd->lumaOffTblAddr               = cpu_to_rpmsg32(rpdev, 0xffffffff);
 	cmd->chromaOffTblAddr             = cpu_to_rpmsg32(rpdev, 0xffffffff);
@@ -587,18 +592,18 @@ static void inband_cmd_video_object(struct rpmsg_device *rpdev, struct video_obj
 	cmd->header.type                  = cpu_to_rpmsg32(rpdev, VIDEO_VO_INBAND_CMD_TYPE_OBJ_PIC);
 	cmd->header.size                  = cpu_to_rpmsg32(rpdev, sizeof(struct video_object));
 	cmd->version                      = cpu_to_rpmsg32(rpdev, 0x72746b3f);
-	cmd->width                        = cpu_to_rpmsg32(rpdev, dst->w);
-	cmd->height                       = cpu_to_rpmsg32(rpdev, dst->h);
-	cmd->Y_pitch                      = cpu_to_rpmsg32(rpdev, dst->w);
+	cmd->width                        = cpu_to_rpmsg32(rpdev, func1->w);
+	cmd->height                       = cpu_to_rpmsg32(rpdev, func1->h);
+	cmd->Y_pitch                      = cpu_to_rpmsg32(rpdev, func1->w);
 	cmd->mode                         = cpu_to_rpmsg32(rpdev, CONSECUTIVE_FRAME);
-	cmd->Y_addr                       = cpu_to_rpmsg32(rpdev, dst_addr + dst->y_offset);
-	cmd->U_addr                       = cpu_to_rpmsg32(rpdev, dst_addr + dst->c_offset);
+	cmd->Y_addr                       = cpu_to_rpmsg32(rpdev, dst_addr + func1->y_offset);
+	cmd->U_addr                       = cpu_to_rpmsg32(rpdev, dst_addr + func1->c_offset);
 }
 
 
 static void inband_cmd_video_transcode_picture_object(struct rpmsg_device *rpdev,
 						      struct video_transcode_picture_object *cmd,
-						      struct rtk_drm_vowb_dst_pic *dst,
+						      struct rtk_drm_vowb_func1_data *func1,
 						      dma_addr_t dst_addr,
 						      struct rtk_drm_vowb_src_pic *src,
 						      dma_addr_t src_addr,
@@ -620,13 +625,13 @@ static void inband_cmd_video_transcode_picture_object(struct rpmsg_device *rpdev
 	cmd->crop_x       = cpu_to_rpmsg32(rpdev, src->crop_x);
 	cmd->crop_y       = cpu_to_rpmsg32(rpdev, src->crop_y);
 	cmd->targetFormat = cpu_to_rpmsg32(rpdev, 0); // nv12
-	cmd->wb_y_addr    = cpu_to_rpmsg32(rpdev, dst_addr + dst->y_offset + src->resize_win_x +
-					   src->resize_win_y * dst->w);
-	cmd->wb_c_addr    = cpu_to_rpmsg32(rpdev, dst_addr + dst->c_offset + src->resize_win_x +
-					   src->resize_win_y / 2 * dst->w);
+	cmd->wb_y_addr    = cpu_to_rpmsg32(rpdev, dst_addr + func1->y_offset + src->resize_win_x +
+					   src->resize_win_y * func1->w);
+	cmd->wb_c_addr    = cpu_to_rpmsg32(rpdev, dst_addr + func1->c_offset + src->resize_win_x +
+					   src->resize_win_y / 2 * func1->w);
 	cmd->wb_w         = cpu_to_rpmsg32(rpdev, src->resize_win_w);
 	cmd->wb_h         = cpu_to_rpmsg32(rpdev, src->resize_win_h);
-	cmd->wb_pitch     = cpu_to_rpmsg32(rpdev, dst->w);
+	cmd->wb_pitch     = cpu_to_rpmsg32(rpdev, func1->w);
 	cmd->contrast     = cpu_to_rpmsg32(rpdev, src->contrast);
 	cmd->brightness   = cpu_to_rpmsg32(rpdev, src->brightness);
 	cmd->hue          = cpu_to_rpmsg32(rpdev, src->hue);
@@ -654,6 +659,7 @@ static int rtk_drm_vowb_func1_prepare_cmds(struct rtk_drm_vowb *vowb,
 	spin_lock_irqsave(&vowb->lock, flags);
 	ret = rtk_drm_vowb_handle_to_addr(file_priv, func1->handles[dst_id], &dst_addr);
 	if (ret) {
+		DRM_ERROR("failed to get addr of dst%d\n", dst_id);
 		spin_unlock_irqrestore(&vowb->lock, flags);
 		return ret;
 	}
@@ -664,8 +670,10 @@ static int rtk_drm_vowb_func1_prepare_cmds(struct rtk_drm_vowb *vowb,
 			continue;
 
 		ret = rtk_drm_vowb_handle_to_addr(file_priv, src->handle, &src_addr[i]);
-		if (ret)
+		if (ret) {
+			DRM_ERROR("failed to get addr of src%d\n", i);
 			continue;
+		}
 	}
 	spin_unlock_irqrestore(&vowb->lock, flags);
 
@@ -673,7 +681,7 @@ static int rtk_drm_vowb_func1_prepare_cmds(struct rtk_drm_vowb *vowb,
 		if (!src_addr[i])
 			continue;
 
-		inband_cmd_video_transcode_picture_object(rpdev, &cmds[j], &func1->dst, dst_addr,
+		inband_cmd_video_transcode_picture_object(rpdev, &cmds[j], func1, dst_addr,
 							  &func1->srcs[i], src_addr[i], ++job_id);
 		j++;
 	}
@@ -681,7 +689,7 @@ static int rtk_drm_vowb_func1_prepare_cmds(struct rtk_drm_vowb *vowb,
 	return j;
 }
 
-static int rtk_drm_vowb_func1_start(struct rtk_drm_vowb *vowb, struct rtk_drm_vowb_func1_data *func1)
+static int rtk_drm_vowb_func1_start_cmd(struct rtk_drm_vowb *vowb, struct rtk_drm_vowb_func1_data *func1)
 {
 	struct video_transcode_picture_object *cmds;
 	int ret;
@@ -708,11 +716,6 @@ free_cmds:
 	return ret;
 }
 
-static void rtk_drm_vowb_func1_init(struct rtk_drm_vowb_func1_data *func1)
-{
-	memset(func1, 0, sizeof(*func1));
-}
-
 static void rtk_drm_vowb_func1_job_done_cb(struct rtk_drm_vowb *vowb, struct rtk_drm_vowb_job *job)
 {
 	struct rtk_drm_vowb_func1_data *func1 = container_of(job, struct rtk_drm_vowb_func1_data, job);
@@ -731,7 +734,7 @@ static void rtk_drm_vowb_func1_job_done_cb(struct rtk_drm_vowb *vowb, struct rtk
 	spin_unlock_irqrestore(&vowb->lock, flags);
 	if (ret)
 		return;
-	inband_cmd_video_object(vowb->tx.rpdev, &cmd, &func1->dst, dst_addr);
+	inband_cmd_video_object(vowb->tx.rpdev, &cmd, func1, dst_addr);
 
 	func1->dst_id = (func1->dst_id + 1) % func1->num_handles;
 
@@ -748,7 +751,129 @@ static void rtk_drm_vowb_func1_vsync_isr(struct rtk_drm_vowb *vowb, void *data)
 
 	if (!func1->enabled)
 		return;
-	rtk_drm_vowb_func1_start(vowb, func1);
+	rtk_drm_vowb_func1_start_cmd(vowb, func1);
+}
+
+static inline bool rtk_drm_vowb_func1_check_file(struct rtk_drm_vowb *vowb,
+						 struct drm_file *file_priv)
+{
+	return vowb->func1_data.file_priv == file_priv;
+}
+
+static int rtk_drm_vowb_func1_start(struct rtk_drm_vowb *vowb)
+{
+	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
+	struct vo_rectangle rect = {0, 0, func1->w, func1->h};
+	int ret;
+
+	ret = rtk_drm_vowb_display(vowb, 0);
+	if (ret)
+		return ret;
+	ret = rtk_drm_vowb_run(vowb);
+	if (ret)
+		return ret;
+	ret = rtk_drm_config_display_window(vowb, &rect, &rect);
+	if (ret)
+		return ret;
+	ret = rtk_drm_vowb_display(vowb, 1);
+	if (ret)
+		return ret;
+
+	func1->dst_id = 0;
+	func1->should_stop = 1;
+	func1->enabled = 1;
+	return rtk_drm_vowb_func1_start_cmd(vowb, func1);
+}
+
+static int rtk_drm_vowb_func1_stop(struct rtk_drm_vowb *vowb)
+{
+	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
+
+	if (vowb->vsync_isr_func != rtk_drm_vowb_func1_vsync_isr)
+		return -EINVAL;
+
+	if (!func1->should_stop)
+		return 0;
+
+	rtk_drm_vowb_display(vowb, 0);
+	rtk_drm_config_display_window(vowb, NULL, NULL);
+	rtk_drm_vowb_stop(vowb);
+	func1->enabled = 0;
+	func1->should_stop = 0;
+	return 0;
+}
+
+static int rtk_drm_vowb_func1_teardown(struct rtk_drm_vowb *vowb)
+{
+	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
+	int i = func1->num_handles;
+
+	if (vowb->vsync_isr_func != rtk_drm_vowb_func1_vsync_isr)
+		return -EINVAL;
+
+	if (!func1->should_teardown)
+		return 0;
+
+	vowb->vsync_isr_func = NULL;
+	vowb->vsync_isr_data = NULL;
+	flush_delayed_work(&vowb->work);
+	for (i--; i >= 0; i--) {
+		drm_gem_handle_delete(func1->file_priv, func1->handles[i]);
+		func1->handles[i] = 0;
+	}
+	func1->file_priv = NULL;
+	func1->should_teardown = 0;
+	return 0;
+}
+
+static void rtk_drm_vowb_func1_init(struct rtk_drm_vowb_func1_data *func1)
+{
+	memset(func1, 0, sizeof(*func1));
+}
+
+static int rtk_drm_vowb_func1_setup(struct drm_device *dev, struct rtk_drm_vowb *vowb,
+				    struct drm_file *file_priv, struct rtk_drm_vowb_setup *arg)
+{
+	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
+	int i;
+	int ret;
+
+	rtk_drm_vowb_func1_init(func1);
+	func1->w               = arg->dst.w;
+	func1->h               = arg->dst.h;
+	func1->format          = arg->dst.format;
+	func1->num_handles     = arg->num_handles;
+	func1->num_srcs        = arg->num_srcs;
+	func1->flags           = arg->flags;
+	func1->y_offset        = 0;
+	func1->c_offset        = func1->h * func1->w;
+
+	for (i = 0; i < func1->num_handles; i++) {
+		struct drm_mode_create_dumb dumb_arg = {
+			.height = func1->h * 3 / 2,
+			.width = func1->w,
+			.bpp = 8,
+		};
+
+		ret = rtk_gem_dumb_create(file_priv, dev, &dumb_arg);
+		if (ret)
+			goto del_handles;
+		func1->handles[i] = dumb_arg.handle;
+	}
+
+	func1->should_teardown = 1;
+	func1->job.job_done_cb = rtk_drm_vowb_func1_job_done_cb;
+	func1->file_priv       = file_priv;
+	vowb->vsync_isr_data   = func1;
+	vowb->vsync_isr_func   = rtk_drm_vowb_func1_vsync_isr;
+	return 0;
+
+del_handles:
+	for (i--; i >= 0; i--) {
+		drm_gem_handle_delete(file_priv, func1->handles[i]);
+		func1->handles[i] = 0;
+	}
+	return ret;
 }
 
 int rtk_drm_vowb_setup_ioctl(struct drm_device *dev, void *data, struct drm_file *file_priv)
@@ -763,57 +888,36 @@ int rtk_drm_vowb_setup_ioctl(struct drm_device *dev, void *data, struct drm_file
 	if (func1->file_priv || vowb->vsync_isr_func != NULL)
 		return -EBUSY;
 
-	// if dst valid
-	rtk_drm_vowb_func1_init(func1);
-	memcpy(func1->handles, arg->handles, sizeof(arg->handles));
-	func1->num_handles     = arg->num_handles;
-	func1->dst             = arg->dst;
-	func1->num_srcs        = arg->num_srcs;
-	func1->flags           = arg->flags;
-	func1->file_priv       = file_priv;
-	func1->job.job_done_cb = rtk_drm_vowb_func1_job_done_cb;
-
-	vowb->vsync_isr_data = func1;
-	vowb->vsync_isr_func = rtk_drm_vowb_func1_vsync_isr;
-	return 0;
+	return rtk_drm_vowb_func1_setup(dev, vowb, file_priv, arg);;
 }
 
 int rtk_drm_vowb_teardown_ioctl(struct drm_device *dev, void *data, struct drm_file *file_priv)
 {
 	struct rtk_drm_vowb *vowb = ((struct rtk_drm_private *)dev->dev_private)->vowb;
-	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
 
 	if (!vowb)
 		return -ENOIOCTLCMD;
 
-	if (func1->file_priv != file_priv || vowb->vsync_isr_func != rtk_drm_vowb_func1_vsync_isr)
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
 		return -EINVAL;
 
-	vowb->vsync_isr_func = NULL;
-	vowb->vsync_isr_data = NULL;
-	flush_delayed_work(&vowb->work);
-	rtk_drm_vowb_func1_init(func1);
-	return 0;
+	return rtk_drm_vowb_func1_teardown(vowb);
 }
 
 int rtk_drm_vowb_release(struct inode *inode, struct file *filp)
 {
 	struct drm_file *file_priv = filp->private_data;
-	struct drm_minor *minor = file_priv->minor;
-	struct drm_device *dev = minor->dev;
+	struct drm_device *dev = file_priv->minor->dev;
 	struct rtk_drm_vowb *vowb = ((struct rtk_drm_private *)dev->dev_private)->vowb;
-	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
 
 	if (!vowb)
 		return 0;
 
-	if (func1->file_priv != file_priv || vowb->vsync_isr_func != rtk_drm_vowb_func1_vsync_isr)
-		return 0;
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
+		return -EINVAL;
 
-	vowb->vsync_isr_func = NULL;
-	vowb->vsync_isr_data = NULL;
-	flush_delayed_work(&vowb->work);
-	rtk_drm_vowb_func1_init(func1);
+	rtk_drm_vowb_func1_stop(vowb);
+	rtk_drm_vowb_func1_teardown(vowb);
 	return 0;
 }
 
@@ -827,13 +931,12 @@ int rtk_drm_vowb_add_src_pic_ioctl(struct drm_device *dev, void *data, struct dr
 	if (!vowb)
 		return -ENOIOCTLCMD;
 
-	if (func1->file_priv != file_priv)
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
 		return -EINVAL;
 
 	if (arg->index >= func1->num_srcs)
 		return -EINVAL;
 
-	// if src valid
 	spin_lock_irqsave(&vowb->lock, flags);
 	func1->srcs[arg->index] = arg->src;
 	spin_unlock_irqrestore(&vowb->lock, flags);
@@ -849,57 +952,45 @@ int rtk_drm_vowb_get_dst_pic_ioctl(struct drm_device *dev, void *data, struct dr
 	if (!vowb)
 		return -ENOIOCTLCMD;
 
-	if (func1->file_priv != file_priv)
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
 		return -EINVAL;
 
-	// if dst valid
-	*arg = func1->dst;
+	arg->w = func1->w;
+	arg->h = func1->h;
+	arg->format = func1->format;
 	return 0;
 }
 
 int rtk_drm_vowb_start_ioctl(struct drm_device *dev, void *data, struct drm_file *file_priv)
 {
 	struct rtk_drm_vowb *vowb = ((struct rtk_drm_private *)dev->dev_private)->vowb;
-	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
-	int ret;
-	struct rtk_drm_vowb_dst_pic *dst = &func1->dst;
-	struct vo_rectangle rect = {0, 0, dst->w, dst->h};
 
 	if (!vowb)
 		return -ENOIOCTLCMD;
 
-	if (func1->file_priv != file_priv)
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
 		return -EINVAL;
 
-	func1->dst_id = 0;
-	ret = rtk_drm_config_display_window(vowb, &rect, &rect);
-	if (ret)
-		DRM_ERROR("rtk_drm_config_display_window() returns %d\n", ret);
-
-	func1->enabled = 1;
-	return rtk_drm_vowb_func1_start(vowb, func1);
+	return rtk_drm_vowb_func1_start(vowb);
 }
 
 int rtk_drm_vowb_stop_ioctl(struct drm_device *dev, void *data, struct drm_file *file_priv)
 {
 	struct rtk_drm_vowb *vowb = ((struct rtk_drm_private *)dev->dev_private)->vowb;
-	struct rtk_drm_vowb_func1_data *func1 = &vowb->func1_data;
 
 	if (!vowb)
 		return -ENOIOCTLCMD;
 
-	if (func1->file_priv != file_priv)
+	if (!rtk_drm_vowb_func1_check_file(vowb, file_priv))
 		return -EINVAL;
 
-	func1->enabled = 0;
-	return 0;
+	return rtk_drm_vowb_func1_stop(vowb);
 }
 
 static void func2_inband_cmd_video_transcode_picture_object(struct rpmsg_device *rpdev,
 							    struct video_transcode_picture_object *cmd,
 							    struct rtk_drm_vowb_pic *pic,
-							    dma_addr_t dst_addr,
-							    dma_addr_t src_addr,
+							    dma_addr_t addrs[8],
 							    u64 job_id)
 {
 	cmd->header.size  = cpu_to_rpmsg32(rpdev, sizeof(*cmd));
@@ -908,18 +999,22 @@ static void func2_inband_cmd_video_transcode_picture_object(struct rpmsg_device 
 	cmd->bufferID_H   = cpu_to_rpmsg32(rpdev, job_id >> 32);
 	cmd->bufferID_L   = cpu_to_rpmsg32(rpdev, job_id & 0xffffffff);
 	cmd->mode         = cpu_to_rpmsg32(rpdev, pic->mode);
-	cmd->Y_addr       = cpu_to_rpmsg32(rpdev, src_addr + pic->offsets[0]);
-	cmd->U_addr       = cpu_to_rpmsg32(rpdev, src_addr + pic->offsets[1]);
+	cmd->Y_addr       = cpu_to_rpmsg32(rpdev, addrs[0]);
+	cmd->U_addr       = cpu_to_rpmsg32(rpdev, addrs[1]);
 	cmd->width        = cpu_to_rpmsg32(rpdev, pic->w);
 	cmd->height       = cpu_to_rpmsg32(rpdev, pic->h);
-	cmd->Y_pitch      = cpu_to_rpmsg32(rpdev, pic->pitches[0]);
-	cmd->C_pitch      = cpu_to_rpmsg32(rpdev, pic->pitches[1]);
-	cmd->targetFormat = cpu_to_rpmsg32(rpdev, pic->target_format);
-	cmd->wb_y_addr    = cpu_to_rpmsg32(rpdev, dst_addr + pic->offsets[2]);
-	cmd->wb_c_addr    = cpu_to_rpmsg32(rpdev, dst_addr + pic->offsets[3]);
+	cmd->Y_pitch      = cpu_to_rpmsg32(rpdev, pic->y_pitch);
+	cmd->C_pitch      = cpu_to_rpmsg32(rpdev, pic->c_pitch);
+	cmd->lumaOffTblAddr = cpu_to_rpmsg32(rpdev, addrs[4]);
+	cmd->chromaOffTblAddr = cpu_to_rpmsg32(rpdev, addrs[5]);
+	cmd->bufBitDepth  = cpu_to_rpmsg32(rpdev, pic->buf_bit_depth);
+	cmd->bufFormat    = cpu_to_rpmsg32(rpdev, pic->buf_format);
+	cmd->wb_y_addr    = cpu_to_rpmsg32(rpdev, addrs[2]);
+	cmd->wb_c_addr    = cpu_to_rpmsg32(rpdev, addrs[3]);
 	cmd->wb_w         = cpu_to_rpmsg32(rpdev, pic->wb_w);
 	cmd->wb_h         = cpu_to_rpmsg32(rpdev, pic->wb_h);
-	cmd->wb_pitch     = cpu_to_rpmsg32(rpdev, pic->pitches[2]);
+	cmd->wb_pitch     = cpu_to_rpmsg32(rpdev, pic->wb_pitch);
+	cmd->targetFormat = cpu_to_rpmsg32(rpdev, pic->target_format);
 	cmd->contrast     = cpu_to_rpmsg32(rpdev, pic->contrast);
 	cmd->brightness   = cpu_to_rpmsg32(rpdev, pic->brightness);
 	cmd->hue          = cpu_to_rpmsg32(rpdev, pic->hue);
@@ -930,10 +1025,66 @@ static void func2_inband_cmd_video_transcode_picture_object(struct rpmsg_device 
 	cmd->crop_height  = cpu_to_rpmsg32(rpdev, pic->crop_h);
 	cmd->crop_x       = cpu_to_rpmsg32(rpdev, pic->crop_x);
 	cmd->crop_y       = cpu_to_rpmsg32(rpdev, pic->crop_y);
-	cmd->bufBitDepth  = cpu_to_rpmsg32(rpdev, pic->buf_bit_depth);
-	cmd->bufFormat    = cpu_to_rpmsg32(rpdev, pic->buf_format);
-	cmd->lumaOffTblAddr = cpu_to_rpmsg32(rpdev, 0);
-	cmd->chromaOffTblAddr = cpu_to_rpmsg32(rpdev, 0);
+
+	if (addrs[6] != -1L) {
+		cmd->version        = cpu_to_rpmsg32(rpdev, 0x54524136);
+		cmd->sub_address    = cpu_to_rpmsg32(rpdev, addrs[6]);
+		cmd->sub_w          = cpu_to_rpmsg32(rpdev, pic->sub_w);
+		cmd->sub_h          = cpu_to_rpmsg32(rpdev, pic->sub_h);
+		cmd->sub_pitch      = cpu_to_rpmsg32(rpdev, pic->sub_pitch);
+		cmd->sub_format     = cpu_to_rpmsg32(rpdev, pic->sub_format);
+	}
+}
+
+static int rtk_drm_vowb_run_cmd_get_addrs(struct drm_file *file_priv,
+					  struct rtk_drm_vowb_run_cmd *arg,
+					  dma_addr_t addrs[8])
+{
+	int ret;
+
+	ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.src_handle, arg->pic.y_offset,
+						 &addrs[0]);
+	if (ret)
+		return ret;
+	ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.src_handle, arg->pic.c_offset,
+						 &addrs[1]);
+	if (ret)
+		return ret;
+
+	ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.wb_handle, arg->pic.wb_y_offset,
+						 &addrs[2]);
+	if (ret)
+		return ret;
+	ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.wb_handle, arg->pic.wb_c_offset,
+						 &addrs[3]);
+	if (ret)
+		return ret;
+
+	if (arg->pic.luma_off_tbl_handle) {
+		ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.luma_off_tbl_handle,
+							 arg->pic.luma_off_tbl_offset, &addrs[4]);
+		if (ret)
+			return ret;
+	} else
+		addrs[4] = -1L;
+
+	if (arg->pic.chroma_off_tbl_handle) {
+		ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.chroma_off_tbl_handle,
+							 arg->pic.chroma_off_tbl_offset, &addrs[5]);
+		if (ret)
+			return ret;
+	} else
+		addrs[5] = -1L;
+
+	addrs[6] = -1L;
+	if (arg->pic.sub_enable) {
+		ret = rtk_drm_vowb_handle_to_addr_offset(file_priv, arg->pic.sub_handle,
+							 arg->pic.sub_offset, &addrs[6]);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
 }
 
 int rtk_drm_vowb_run_cmd(struct drm_device *dev, void *data, struct drm_file *file_priv)
@@ -942,23 +1093,22 @@ int rtk_drm_vowb_run_cmd(struct drm_device *dev, void *data, struct drm_file *fi
 	struct rtk_drm_vowb_func2_data *func2 = &vowb->func2_data;
 	struct rtk_drm_vowb_run_cmd *arg = data;
 	struct video_transcode_picture_object cmd = {};
-	dma_addr_t dst_addr, src_addr;
+	dma_addr_t addrs[8] = {};
 	unsigned long flags;
 	int ret;
 	spin_lock_irqsave(&vowb->lock, flags);
-	ret = rtk_drm_vowb_handle_to_addr(file_priv, arg->pic.handles[0], &src_addr);
-	if (!ret)
-		ret = rtk_drm_vowb_handle_to_addr(file_priv, arg->pic.handles[2], &dst_addr);
+	ret = rtk_drm_vowb_run_cmd_get_addrs(file_priv, arg, addrs);
 	spin_unlock_irqrestore(&vowb->lock, flags);
 	if (ret)
 		return ret;
 
 	func2_inband_cmd_video_transcode_picture_object(vowb->tx.rpdev, &cmd, &arg->pic,
-							dst_addr, src_addr, ++vowb->emit_job_id);
+							 addrs, ++vowb->emit_job_id);
 
 	ret = rtk_drm_vowb_queue_job(vowb, &func2->job, &cmd, sizeof(cmd));
 	if (!ret)
 		arg->job_id = func2->job.job_id;
+
 	return ret;
 }
 

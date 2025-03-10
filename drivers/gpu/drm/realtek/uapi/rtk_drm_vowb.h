@@ -2,16 +2,6 @@
 #ifndef __UAPI_RTK_DRM_VOWB__
 #define __UAPI_RTK_DRM_VOWB__
 
-#define RTK_DRM_VOWB_MAX_SRC_PIC               16
-
-struct rtk_drm_vowb_dst_pic {
-	__u32 y_offset;
-	__u32 c_offset;
-	__u32 w;
-	__u32 h;
-	__u32 format;
-};
-
 #define RTK_DRM_VOWB_FLAGS_VALID_SETUP_FLAGS     (0)
 #define RTK_DRM_VOWB_FLAGS_VALID_TEARDOWN_FLAGS  (0)
 #define RTK_DRM_VOWB_FLAGS_VALID_START_FLAGS     (0)
@@ -20,18 +10,26 @@ struct rtk_drm_vowb_dst_pic {
 #define RTK_DRM_VOWB_FLAGS_CHECK_CMD_BLOCK       (1)
 #define RTK_DRM_VOWB_FLAGS_VALID_CHECK_CMD_FLAGS (RTK_DRM_VOWB_FLAGS_CHECK_CMD_BLOCK)
 
+#define RTK_DRM_VOWB_MAX_SRC_PIC               16
+
+struct rtk_drm_vowb_dst_pic {
+	__u32 w;
+    __u32 h;
+    __u32 format;
+};
+
 /**
  * struct rtk_drm_vowb_setup - setup vowb
- * @dst:      [in] dst pic info
- * @num_srcs: [in] max number of source
  * @flags:    [in] valid flags is in RTK_DRM_VOWB_FLAGS_VALID_SETUP_FLAGS
+ * @num_handles: [in] number of intenal handles
+ * @num_srcs: [in] max number of source
+ * @dst:      [in] dst info
  */
 struct rtk_drm_vowb_setup {
 	__u32 flags;
-	struct rtk_drm_vowb_dst_pic dst;
-	__u32 handles[4];
 	__u32 num_handles;
 	__u32 num_srcs;
+	struct rtk_drm_vowb_dst_pic dst;
 };
 
 /**
@@ -96,13 +94,19 @@ struct rtk_drm_vowb_stop {
 };
 
 struct rtk_drm_vowb_pic {
-	__u32 handles[4];
-	__u32 offsets[4];
-	__u32 pitches[4];
+	__u32 src_handle;
+	__u32 y_offset;
+	__u32 y_pitch;
+	__u32 c_offset;
+	__u32 c_pitch;
 	__u32 mode;
 	__u32 w;
 	__u32 h;
 	__u32 target_format;
+	__u32 wb_handle;
+	__u32 wb_y_offset;
+	__u32 wb_c_offset;
+	__u32 wb_pitch;
 	__u32 wb_w;
 	__u32 wb_h;
 	__u32 contrast;
@@ -117,6 +121,19 @@ struct rtk_drm_vowb_pic {
 	__u32 crop_h;
 	__u32 buf_bit_depth;
 	__u32 buf_format;
+
+	__u32 luma_off_tbl_handle;
+	__u32 luma_off_tbl_offset;
+	__u32 chroma_off_tbl_handle;
+	__u32 chroma_off_tbl_offset;
+
+	__u32 sub_enable;
+	__u32 sub_handle;
+	__u32 sub_offset;
+	__u32 sub_w;
+	__u32 sub_h;
+	__u32 sub_pitch;
+	__u32 sub_format;
 };
 
 /**
@@ -124,24 +141,15 @@ struct rtk_drm_vowb_pic {
  * @flags:   [in] valid flags is in RTK_DRM_VOWB_FLAGS_VALID_RUN_CMD_FLAGS
  * @cmd:     [in] cmd
  * @pic:     [in] pic info for vowb
- *                handles & offsets & pitches
- *                  y_addr    => handles[0] & offsets[0]
- *                  c_addr    => handles[0] & offsets[1]
- *                  wb_y_addr => handles[2] & offsets[2]
- *                  wb_y_addr => handles[2] & offsets[3]
- *                  y_pitch   => pitches[0]
- *                  c_pitch   => pitches[1]
- *                  wb_pitch  => pitches[2]
- *
  * job_id:   [out] job_id
  */
 struct rtk_drm_vowb_run_cmd {
 	__u32 flags;
 	__u32 cmd;
+	__u64 job_id;
 	union {
 		struct rtk_drm_vowb_pic pic;
 	};
-	__u64 job_id;
 };
 
 /**
