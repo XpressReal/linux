@@ -78,6 +78,7 @@ struct rpmsg_endpoint_ops {
 			     poll_table *wait);
 	int (*set_flow_control)(struct rpmsg_endpoint *ept, bool pause, u32 dst);
 	ssize_t (*get_mtu)(struct rpmsg_endpoint *ept);
+	int (*rx_done)(struct rpmsg_endpoint *ept, void *data);
 };
 
 struct device *rpmsg_find_device(struct device *parent,

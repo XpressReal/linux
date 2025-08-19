@@ -370,6 +370,26 @@ ssize_t rpmsg_get_mtu(struct rpmsg_endpoint *ept)
 }
 EXPORT_SYMBOL(rpmsg_get_mtu);
 
+/**
+ * rpmsg_rx_done() - release resources related to @data from a @rx_cb
+ * @ept:	the rpmsg endpoint
+ * @data:	payload from a message
+ *
+ * Returns 0 on success and an appropriate error value on failure.
+ */
+int rpmsg_rx_done(struct rpmsg_endpoint *ept, void *data)
+{
+	if (WARN_ON(!ept))
+		return -EINVAL;
+	if (!ept->ops->rx_done)
+		return -ENXIO;
+	if (!ept->rx_done)
+		return -EINVAL;
+
+	return ept->ops->rx_done(ept, data);
+}
+EXPORT_SYMBOL(rpmsg_rx_done);
+
 /*
  * match a rpmsg channel with a channel info struct.
  * this is used to make sure we're not creating rpmsg devices for channels
