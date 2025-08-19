@@ -53,6 +53,7 @@ struct rtk_sdmmc_host {
 	char *sdmmc_bounce_buf;
 	int sdmmc_bounce_buf_val;
 	struct scatterlist *sdmmc_bounce_sg;
+  bool disable_wp;
 };
 
 struct sdmmc_cmd_pkt {
