@@ -41,5 +41,14 @@ source "drivers/net/wireless/quantenna/Kconfig"
 source "drivers/net/wireless/legacy/Kconfig"
 
 source "drivers/net/wireless/virtual/Kconfig"
+source "drivers/net/wireless/aic8800/Kconfig"
 
 endif # WLAN
+
+config AIC8800
+	tristate "Support for AIC8800 wireless driver"
+	depends on WLAN
+	help
+	  Enable support for AIC8800 wireless driver.
+
+	  This driver adds support for the AIC8800 wireless chipset.

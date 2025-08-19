@@ -25,3 +25,6 @@ obj-$(CONFIG_WLAN_VENDOR_ZYDAS) += zydas/
 
 obj-$(CONFIG_WLAN) += legacy/
 obj-$(CONFIG_WLAN) += virtual/
+
+# obj-$(CONFIG_AIC_WLAN_SUPPORT) += aic8800/
+obj-$(CONFIG_AIC8800) += aic8800/
