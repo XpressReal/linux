@@ -628,7 +628,8 @@
 &rtk_pm {
 	wakeup-flags = <NORMAL_MODE>;
 	wakeup-gpio-list = <2 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>,
-			   <4 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>;
+			   <4 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>,
+			   <26 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>;
 	wakeup-timer = <0>;
 	dco = <DCO_DISABLE>;
 	rtk-bt = <255>; /* for Realtek bluetooth only */
