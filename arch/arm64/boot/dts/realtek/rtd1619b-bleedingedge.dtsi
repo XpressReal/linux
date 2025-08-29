@@ -90,6 +90,10 @@
 	};
 };
 
+&audio_out {
+	status = "okay";
+};
+
 &cec {
 	status = "okay";
 };
@@ -338,7 +342,7 @@
 };
 
 &display_subsystem {
-	ports = <&vo0_out>;
+	ports = <&vo1_out>, <&vo0_out>;
 	status = "okay";
 };
 
@@ -381,6 +385,16 @@
 			dsi_out_panel: endpoint {
 				reg = <0>;
 				remote-endpoint = <&panel_in_dsi>;
+			};
+		};
+	};
+
+	dsi_panel@0 {
+		compatible = "realtek,10inch-mipi-dsi-panel";
+		reg = <0>;
+		port {
+			panel_in_dsi: endpoint {
+				remote-endpoint = <&dsi_out_panel>;
 			};
 		};
 	};
@@ -509,27 +523,12 @@
 	status = "okay";
 };
 
+&i2c_4 {
+	status = "okay";
+};
+
 &i2c_5 {
 	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	raspits_panel: raspits-panel@45 {
-		compatible = "raspberrypi,7inch-touchscreen-panel";
-		reg = <0x45>;
-
-		port {
-			panel_in_dsi: endpoint {
-				remote-endpoint = <&dsi_out_panel>;
-			};
-		};
-	};
-
-	raspits_touch_ft5426: raspits-touch-ft5426@38 {
-		compatible = "raspits_ft5426";
-		reg = <0x38>;
-	};
-
 };
 
 &irda {
