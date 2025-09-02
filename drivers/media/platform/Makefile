@@ -22,6 +22,7 @@ obj-y += qcom/
 obj-y += renesas/
 obj-y += rtk_dsi/
 obj-y += rtk_tpdemux/
+obj-y += rtk_vcodec/
 obj-y += rockchip/
 obj-y += samsung/
 obj-y += st/
