@@ -51,6 +51,11 @@
 			reg = <0x040ff000 0x4000>;
 		};
 
+		video_fw_ve3: video_fw_ve3@4200000 {
+			reg = <0x04200000 0x200000>;
+			no-map;
+		};
+
 		hifi: hifi@f800000 {
 			reg = <0x0f800000 0x800000>;
 			no-map;
@@ -290,6 +295,15 @@
 				#address-cells = <1>;
 				#size-cells = <1>;
 				ranges = <0x0 0x48c00 0x100>;
+			};
+
+			ve3_misc: syscon@4b000 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x4b000 0x100>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x4b000 0x100>;
 			};
 
 			usb_manager: rtk-usb-manager@7088 {
@@ -555,15 +569,6 @@
 				nvmem-cell-names = "cec-trim";
 				hdmi-phandle = <&hdmi>;
 				realtek,cbuswrap = <&cbus_wrapper>;
-				status = "disabled";
-			};
-
-			rtk_ve3_uart: rtk_ve3_uart@4b000 {
-				compatible = "realtek,rtk-ve3-uart";
-				reg = <0x4b000 0x20>;
-				clocks = <&cc RTD1619B_CRT_CLK_EN_VE3>;
-				clock-names = "ve3";
-				log_enable = <0>;
 				status = "disabled";
 			};
 
@@ -909,6 +914,11 @@
 		status = "disabled";
 	};
 
+	ve3_enc: ve3_enc {
+		compatible = "realtek,rtd16xxb-ve3";
+		memory-region = <&cma_reserved_0>;
+	};
+
 	hifi_dummy: hifi_dummy {
 		compatible = "realtek,rtd1319-vcpu";
 		clocks = <&cc RTD1619B_CRT_PLL_HIFI>;
@@ -948,6 +958,11 @@
 	rtk_ve2rpc: rtk_ve2rpc {
 		compatible = "realtek,ve2rpc";
 		realtek,krpc-agent = <&vcpu_kernel_agent>;
+	};
+
+	rtk_ve3rpc: rtk_ve3rpc {
+		compatible = "realtek,ve3rpc";
+		realtek,krpc-agent = <&ve3_kernel_agent>;
 	};
 
 	tee-mem {
@@ -1386,6 +1401,37 @@
 				rx-fifo-size = <0x200>;
 			};
 		};
+		ve3-rpc {
+			syscon = <&ve3>;
+			interrupts = <0 55 4>;
+			rproc = <&ve3_rproc>;
+			big-endian = <1>;
+			status = "okay";
+			ve3-kernel-channel {
+				compatible = "realtek,rpc-kernel-ve3";
+				name = "ve3-kernel-channel";
+				tx-info = <0x4101880>;
+				rx-info = <0x41018c0>;
+				tx-fifo = <0x4101400>;
+				tx-fifo-size = <0x200>;
+				rx-fifo = <0x4101600>;
+				rx-fifo-size = <0x200>;
+				ve3_kernel_agent: ve3-kernel-agent {
+					compatible = "realtek,krpc-agent-ve3";
+				};
+			};
+
+			ve3-intr-channel {
+				compatible = "realtek,rpc-intr-ve3";
+				name = "ve3-intr-channel";
+				tx-info = <0x4101800>;
+				rx-info = <0x4101840>;
+				tx-fifo = <0x4101000>;
+				tx-fifo-size = <0x200>;
+				rx-fifo = <0x4101200>;
+				rx-fifo-size = <0x200>;
+			};
+		};
 	};
 
 	sb2_lock0: hwlock@0 {
@@ -1593,6 +1639,20 @@
 			type-firmware = "hifi";
 			name-firmware = "HIFI.bin-stark-nonsecure-allcache";
 			status = "disabled";
+		};
+		ve3_rproc: ve3-rproc {
+			compatible = "ve3-rproc";
+			type-firmware = "ve3";
+			name-firmware = "VE3FW.bin";
+			memory-region = <&video_fw_ve3>;
+			status = "okay";
+			rtk_ve3_uart: rtk_ve3_uart {
+				compatible = "realtek,rtk-ve3-uart";
+				syscon = <&ve3_misc>;
+				clocks = <&cc RTD1619B_CRT_CLK_EN_VE3>;
+				clock-names = "ve3";
+				log_enable = <1>;
+			};
 		};
 	};
 };

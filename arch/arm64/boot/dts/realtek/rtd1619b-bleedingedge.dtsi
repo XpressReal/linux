@@ -35,6 +35,12 @@
 		regulator-max-microvolt = <1200000>;
 	};
 
+	display_capture: display-capture {
+		compatible = "realtek,display-capture";
+		realtek,krpc-agent = <&acpu_kernel_agent>;
+		memory-region = <&cma_reserved_0>;
+	};
+
 	vcc_3v3_pcie: vcc-3v3-pcie {
 		status = "okay";
 		compatible = "regulator-fixed";
