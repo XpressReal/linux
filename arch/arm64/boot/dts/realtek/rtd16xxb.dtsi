@@ -68,12 +68,12 @@
 
 		cma_reserved_0:linux,cma {
 			compatible = "shared-dma-pool";
-			size = <0x20000000>;			/* 512M */
+			size = <0x1fc00000>;			/* 508M */
 			alignment = <0x00400000>;
 
 			/* Avoid crossing A/VCPU PA2VA per 512M boundary */
 			/* Avoid allocating 0x1fc00000 ~ 0x1fc00fff to LX CPU (A/VCPU/VE3) */
-			alloc-ranges=<0x40000000 0x20000000>;
+			alloc-ranges=<0x40400000 0x1fc00000>;
 			linux,cma-default;
 			reusable;
 		};
