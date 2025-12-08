@@ -1,0 +1,1 @@
+gceSTATUS rtk_npu_wrapper_init(struct device *dev, uint8_t *reg_base);
